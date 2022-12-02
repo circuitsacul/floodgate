@@ -3,7 +3,7 @@ name = "floodgate"
 version = "0.1.1"
 edition = "2021"
 description = "A ratelimiting implementation designed for high throughput."
-license = "The Unlicense"
+license = "Unlicense"
 respository = "https://github.com/circuitsacul/floodgate"
 readme = "README.md"
 
