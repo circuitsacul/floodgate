@@ -2,6 +2,10 @@
 name = "floodgate"
 version = "0.1.0"
 edition = "2021"
+description = "A ratelimiting implementation designed for high throughput."
+license-file = "LICENSE"
+respository = "https://github.com/circuitsacul/floodgate"
+readme = "README.md"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
