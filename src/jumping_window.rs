@@ -35,7 +35,13 @@ impl JumpingWindow {
 
     pub fn next_reset(&mut self, now: Option<SystemTime>) -> Duration {
         let now = now.unwrap_or_else(SystemTime::now);
-        self.period - now.duration_since(self.last_reset).unwrap()
+        let since = now.duration_since(self.last_reset).unwrap();
+
+        if since > self.period {
+            Duration::from_secs(0)
+        } else {
+            self.period - since
+        }
     }
 
     pub fn retry_after(&mut self, now: Option<SystemTime>) -> Option<Duration> {

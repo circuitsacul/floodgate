@@ -13,7 +13,7 @@ use {
 pub struct FixedMapping<K: Eq + Hash + Clone + Send + Sync + 'static> {
     pub(crate) mapping: Mapping<K>,
     capacity: u64,
-    period: Duration,
+    pub(crate) period: Duration,
 }
 
 impl<K: Eq + Hash + Clone + Send + Sync + 'static> FixedMapping<K> {
@@ -56,7 +56,12 @@ impl<K: Eq + Hash + Clone + Send + Sync + 'static> FixedMapping<K> {
     #[cfg(feature = "tokio")]
     pub fn start(mapping: Arc<RwLock<Self>>) {
         tokio::spawn(async move {
+            let period = {
+                mapping.read().await.period
+            };
             loop {
+                tokio::time::sleep(period).await;
+
                 let now = SystemTime::now();
 
                 let should_cycle = {
