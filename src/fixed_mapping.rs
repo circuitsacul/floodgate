@@ -1,14 +1,13 @@
-use std::{hash::Hash, time::Duration};
+use std::{
+    hash::Hash,
+    sync::Arc,
+    thread::{self, sleep},
+    time::Duration,
+};
 
 use dashmap::mapref::one::RefMut;
 
 use crate::{mapping::Mapping, JumpingWindow};
-
-#[cfg(feature = "tokio")]
-use {
-    std::{sync::Arc, time::SystemTime},
-    tokio::sync::RwLock,
-};
 
 pub struct FixedMapping<K: Eq + Hash + Clone + Send + Sync + 'static> {
     pub(crate) mapping: Mapping<K>,
@@ -21,7 +20,7 @@ impl<K: Eq + Hash + Clone + Send + Sync + 'static> FixedMapping<K> {
         Self {
             capacity,
             period,
-            mapping: Mapping::new(period),
+            mapping: Mapping::new(),
         }
     }
 
@@ -53,26 +52,11 @@ impl<K: Eq + Hash + Clone + Send + Sync + 'static> FixedMapping<K> {
         self.get_bucket(key).reset(None)
     }
 
-    #[cfg(feature = "tokio")]
-    pub fn start(mapping: Arc<RwLock<Self>>) {
-        tokio::spawn(async move {
-            let period = {
-                mapping.read().await.period
-            };
-            loop {
-                tokio::time::sleep(period).await;
-
-                let now = SystemTime::now();
-
-                let should_cycle = {
-                    let mapping = mapping.read().await;
-                    mapping.mapping.should_cycle(Some(now))
-                };
-
-                if should_cycle {
-                    mapping.write().await.mapping.cycle(Some(now));
-                }
-            }
+    pub fn start(mapping: Arc<Self>, cycle_period: Option<Duration>) {
+        let period = cycle_period.unwrap_or(mapping.period);
+        thread::spawn(move || loop {
+            sleep(period);
+            mapping.mapping.cycle();
         });
     }
 }

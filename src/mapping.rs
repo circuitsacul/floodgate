@@ -1,5 +1,6 @@
 use std::{
     hash::Hash,
+    sync::atomic::{AtomicBool, Ordering},
     time::{Duration, SystemTime},
 };
 
@@ -8,19 +9,23 @@ use dashmap::{mapref::one::RefMut, DashMap};
 use crate::jumping_window::JumpingWindow;
 
 pub(crate) struct Mapping<K: Eq + Hash + Clone + Send + Sync> {
-    previous: DashMap<K, JumpingWindow>,
-    current: DashMap<K, JumpingWindow>,
-    cycle_period: Duration,
-    last_cycle: SystemTime,
+    right: DashMap<K, JumpingWindow>,
+    left: DashMap<K, JumpingWindow>,
+    is_right_current: AtomicBool,
+}
+
+impl<K: Eq + Hash + Clone + Send + Sync> Default for Mapping<K> {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl<K: Eq + Hash + Clone + Send + Sync> Mapping<K> {
-    pub(crate) fn new(cycle_period: Duration) -> Self {
+    pub(crate) fn new() -> Self {
         Self {
-            previous: DashMap::new(),
-            current: DashMap::new(),
-            cycle_period,
-            last_cycle: SystemTime::now(),
+            left: DashMap::new(),
+            right: DashMap::new(),
+            is_right_current: AtomicBool::new(true),
         }
     }
 
@@ -30,28 +35,37 @@ impl<K: Eq + Hash + Clone + Send + Sync> Mapping<K> {
         capacity: u64,
         period: Duration,
     ) -> RefMut<K, JumpingWindow> {
-        if let Some((key, bucket)) = self.previous.remove(key) {
-            self.current.insert(key, bucket);
+        let (current, previous) = match self.is_right_current.load(Ordering::Relaxed) {
+            true => (&self.right, &self.left),
+            false => (&self.left, &self.right),
+        };
+
+        if let Some((key, bucket)) = previous.remove(key) {
+            current.insert(key, bucket);
         }
 
-        let bucket = self.current.get_mut(key).unwrap_or_else(|| {
+        let bucket = current.get_mut(key).unwrap_or_else(|| {
             let bucket = JumpingWindow::new(capacity, period);
-            self.current.insert(key.clone(), bucket);
-            self.current.get_mut(key).unwrap()
+            current.insert(key.clone(), bucket);
+            current.get_mut(key).unwrap()
         });
 
         bucket
     }
 
-    pub(crate) fn should_cycle(&self, now: Option<SystemTime>) -> bool {
-        let now = now.unwrap_or_else(SystemTime::now);
-        now.duration_since(self.last_cycle).unwrap() > self.cycle_period
-    }
+    pub(crate) fn cycle(&self) {
+        let start = SystemTime::now();
+        let is_right_current = !self.is_right_current.load(Ordering::Relaxed);
+        self.is_right_current
+            .store(is_right_current, Ordering::Relaxed);
 
-    pub(crate) fn cycle(&mut self, now: Option<SystemTime>) {
-        std::mem::swap(&mut self.previous, &mut self.current);
-        self.current = DashMap::new();
-
-        self.last_cycle = now.unwrap_or_else(SystemTime::now);
+        {
+            match is_right_current {
+                true => &self.left,
+                false => &self.right,
+            }
+        }
+        .clear();
+        println!("Cycled: {:?}", start.elapsed());
     }
 }

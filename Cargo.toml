@@ -11,8 +11,3 @@ readme = "README.md"
 
 [dependencies]
 dashmap = "5.4.0"
-tokio = { version = "1.22.0", optional = true, features = ["sync", "rt", "macros", "time"] }
-
-[features]
-default = ["tokio"]
-tokio = ["dep:tokio"]

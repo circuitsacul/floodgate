@@ -5,42 +5,44 @@ mod mapping;
 pub use fixed_mapping::FixedMapping;
 pub use jumping_window::JumpingWindow;
 
-#[cfg(feature="tokio")]
 #[cfg(test)]
 mod test {
-    use std::{time::{Duration, SystemTime}, sync::Arc};
-
-    use tokio::sync::RwLock;
+    use std::{
+        sync::Arc,
+        thread,
+        time::{Duration, SystemTime},
+    };
 
     use crate::FixedMapping;
 
-    async fn benchmark_once(cooldown: Arc<RwLock<FixedMapping<i32>>>) {
-        const TRIGGERS: i32 = 1_000_000;
-
+    fn benchmark_once(cooldown: Arc<FixedMapping<i32>>, id: i32, triggers: i32) {
         let start = SystemTime::now();
-        for i in 0..TRIGGERS {
-            cooldown.read().await.trigger(&(i % 100_000));
+        for i in (triggers * id)..(triggers * (id + 1)) {
+            cooldown.trigger(&i);
         }
 
         println!("Task took {:?}", start.elapsed());
     }
 
-    #[tokio::test]
-    async fn benchmark() {
+    #[test]
+    fn benchmark() {
+        const THREADS: i32 = 4;
+        const TRIGGERS: i32 = 20_000_000 / THREADS;
         const CAPACITY: u64 = 10;
         const PERIOD: Duration = Duration::from_secs(1);
 
         let cooldown = FixedMapping::new(CAPACITY, PERIOD);
-        let cooldown = Arc::new(RwLock::new(cooldown));
-        FixedMapping::start(cooldown.clone());
+        let cooldown = Arc::new(cooldown);
+        // FixedMapping::start(cooldown.clone(), None);
 
         let mut tasks = Vec::new();
-        for _ in 0..10 {
-            tasks.push(tokio::spawn(benchmark_once(cooldown.clone())));
+        for id in 0..THREADS {
+            let cld = cooldown.clone();
+            tasks.push(thread::spawn(move || benchmark_once(cld, id, TRIGGERS)));
         }
 
         for t in tasks {
-            t.await.unwrap();
+            t.join().unwrap();
         }
     }
 }
