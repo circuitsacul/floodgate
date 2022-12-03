@@ -10,8 +10,8 @@ use dashmap::mapref::one::RefMut;
 use crate::{mapping::Mapping, JumpingWindow};
 
 pub struct DynamicMapping<K: Eq + Hash + Clone + Send + Sync + 'static> {
-    pub(crate) mapping: Mapping<K>,
-    pub(crate) max_period: Duration,
+    mapping: Mapping<K>,
+    max_period: Duration,
 }
 
 impl<K: Eq + Hash + Clone + Send + Sync + 'static> DynamicMapping<K> {

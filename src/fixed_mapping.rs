@@ -10,9 +10,9 @@ use dashmap::mapref::one::RefMut;
 use crate::{mapping::Mapping, JumpingWindow};
 
 pub struct FixedMapping<K: Eq + Hash + Clone + Send + Sync + 'static> {
-    pub(crate) mapping: Mapping<K>,
+    mapping: Mapping<K>,
     capacity: u64,
-    pub(crate) period: Duration,
+    period: Duration,
 }
 
 impl<K: Eq + Hash + Clone + Send + Sync + 'static> FixedMapping<K> {
