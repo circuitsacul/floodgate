@@ -40,17 +40,19 @@ impl<K: Eq + Hash + Clone + Send + Sync> Mapping<K> {
             false => (&self.left, &self.right),
         };
 
-        if let Some((key, bucket)) = previous.remove(key) {
-            current.insert(key, bucket);
+        if let Some(bucket) = current.get_mut(key) {
+            return bucket;
         }
 
-        let bucket = current.get_mut(key).unwrap_or_else(|| {
+        if let Some((key2, bucket)) = previous.remove(key) {
+            current.insert(key2, bucket);
+        } else {
             let bucket = JumpingWindow::new(capacity, period);
             current.insert(key.clone(), bucket);
-            current.get_mut(key).unwrap()
-        });
+        }
 
-        bucket
+
+        self.get_bucket(key, capacity, period)
     }
 
     pub(crate) fn cycle(&self) {
