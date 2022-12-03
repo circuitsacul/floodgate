@@ -51,7 +51,6 @@ impl<K: Eq + Hash + Clone + Send + Sync> Mapping<K> {
             current.insert(key.clone(), bucket);
         }
 
-
         self.get_bucket(key, capacity, period)
     }
 
