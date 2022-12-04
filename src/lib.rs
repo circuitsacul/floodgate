@@ -29,7 +29,7 @@ mod test {
     #[test]
     fn benchmark() {
         const THREADS: i32 = 4;
-        const TRIGGERS: i32 = 20_000_000 / THREADS;
+        const TRIGGERS: i32 = 100_000 / THREADS;
         const CAPACITY: u64 = 10;
         const PERIOD: Duration = Duration::from_secs(1);
 
