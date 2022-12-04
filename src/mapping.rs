@@ -1,7 +1,10 @@
 use std::{
     hash::Hash,
-    sync::atomic::{AtomicBool, Ordering},
-    time::Duration,
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        RwLock,
+    },
+    time::{Duration, Instant},
 };
 
 use dashmap::{mapref::one::RefMut, DashMap};
@@ -12,20 +15,18 @@ pub(crate) struct Mapping<K: Eq + Hash + Clone + Send + Sync> {
     right: DashMap<K, JumpingWindow>,
     left: DashMap<K, JumpingWindow>,
     is_right_current: AtomicBool,
-}
-
-impl<K: Eq + Hash + Clone + Send + Sync> Default for Mapping<K> {
-    fn default() -> Self {
-        Self::new()
-    }
+    last_cycle: RwLock<Instant>,
+    cycle_period: Duration,
 }
 
 impl<K: Eq + Hash + Clone + Send + Sync> Mapping<K> {
-    pub(crate) fn new() -> Self {
+    pub(crate) fn new(cycle_period: Duration) -> Self {
         Self {
             left: DashMap::new(),
             right: DashMap::new(),
             is_right_current: AtomicBool::new(true),
+            last_cycle: RwLock::new(Instant::now()),
+            cycle_period: cycle_period.mul_f32(0.95),
         }
     }
 
@@ -54,7 +55,12 @@ impl<K: Eq + Hash + Clone + Send + Sync> Mapping<K> {
         self.get_bucket(key, capacity, period)
     }
 
-    pub(crate) fn cycle(&self) {
+    pub(crate) fn cycle(&self, now: Option<Instant>) -> bool {
+        let now = now.unwrap_or_else(Instant::now);
+        if now.duration_since(*self.last_cycle.read().unwrap()) < self.cycle_period {
+            return false;
+        }
+
         let is_right_current = !self.is_right_current.load(Ordering::Relaxed);
         self.is_right_current
             .store(is_right_current, Ordering::Relaxed);
@@ -66,5 +72,9 @@ impl<K: Eq + Hash + Clone + Send + Sync> Mapping<K> {
             }
         }
         .clear();
+
+        *self.last_cycle.write().unwrap() = now;
+
+        true
     }
 }

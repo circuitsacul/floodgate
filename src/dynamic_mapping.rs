@@ -26,8 +26,8 @@ impl<K: Eq + Hash + Clone + Send + Sync + 'static> DynamicMapping<K> {
     /// the period of any cooldown this mapping contains.
     pub fn new(cycle_period: Duration) -> Self {
         Self {
+            mapping: Mapping::new(cycle_period),
             cycle_period,
-            mapping: Mapping::new(),
         }
     }
 
@@ -60,14 +60,22 @@ impl<K: Eq + Hash + Clone + Send + Sync + 'static> DynamicMapping<K> {
         self.get_bucket(key, capacity, period).reset(None)
     }
 
+    /// Cycles the mapping. Returns `true` if it cycled, or `false` if not.
+    pub fn cycle(&self) -> bool {
+        self.mapping.cycle(None)
+    }
+
     /// Start the background cycler. Failing to do this will result in a memory leak.
+    ///
+    /// If, for some reason, you don't want to use the default cycler, you must manually call
+    /// the `.cycle` method on the mapping periodically.
     ///
     /// # Arguments
     /// * `mapping` - The DynamicMapping, wrapped in an Arc.
     pub fn start(mapping: Arc<Self>) {
         thread::spawn(move || loop {
             sleep(mapping.cycle_period);
-            mapping.mapping.cycle();
+            mapping.mapping.cycle(None);
         });
     }
 }

@@ -28,7 +28,7 @@ impl<K: Eq + Hash + Clone + Send + Sync + 'static> FixedMapping<K> {
         Self {
             capacity,
             period,
-            mapping: Mapping::new(),
+            mapping: Mapping::new(period),
         }
     }
 
@@ -60,7 +60,15 @@ impl<K: Eq + Hash + Clone + Send + Sync + 'static> FixedMapping<K> {
         self.get_bucket(key).reset(None)
     }
 
-    /// Start the background cycler. Failing to do this will result in a memory leak.
+    /// Cycles the mapping. Returns `true` if it cycled, or `false` if not.
+    pub fn cycle(&self) -> bool {
+        self.mapping.cycle(None)
+    }
+
+    /// Start the background cycler.
+    ///
+    /// If, for some reason, you don't want to use the default cycler, you must manually call
+    /// the `.cycle` method on the mapping periodically.
     ///
     /// # Arguments
     /// * `mapping` - The FixedMapping, wrapped in an Arc.
@@ -71,7 +79,9 @@ impl<K: Eq + Hash + Clone + Send + Sync + 'static> FixedMapping<K> {
         assert!(period >= mapping.period);
         thread::spawn(move || loop {
             sleep(period);
-            mapping.mapping.cycle();
+            if !mapping.mapping.cycle(None) {
+                eprintln!("Cycler attempted to call the mapping too soon.");
+            }
         });
     }
 }
