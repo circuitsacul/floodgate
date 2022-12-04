@@ -67,6 +67,5 @@ impl<K: Eq + Hash + Clone + Send + Sync> Mapping<K> {
             }
         }
         .clear();
-        println!("Cycled: {:?}", start.elapsed());
     }
 }
