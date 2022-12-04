@@ -1,7 +1,7 @@
 use std::{
     hash::Hash,
     sync::atomic::{AtomicBool, Ordering},
-    time::{Duration, SystemTime},
+    time::Duration,
 };
 
 use dashmap::{mapref::one::RefMut, DashMap};
@@ -55,7 +55,6 @@ impl<K: Eq + Hash + Clone + Send + Sync> Mapping<K> {
     }
 
     pub(crate) fn cycle(&self) {
-        let start = SystemTime::now();
         let is_right_current = !self.is_right_current.load(Ordering::Relaxed);
         self.is_right_current
             .store(is_right_current, Ordering::Relaxed);
