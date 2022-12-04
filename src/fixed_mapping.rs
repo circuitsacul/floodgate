@@ -9,6 +9,9 @@ use dashmap::mapref::one::RefMut;
 
 use crate::{mapping::Mapping, JumpingWindow};
 
+/// A key-based mapping of `floodgate::JumpingWindow`'s.
+///
+/// For some method documentation, please see `floodgate::JumpingWindow`.
 pub struct FixedMapping<K: Eq + Hash + Clone + Send + Sync + 'static> {
     mapping: Mapping<K>,
     capacity: u64,
@@ -16,6 +19,11 @@ pub struct FixedMapping<K: Eq + Hash + Clone + Send + Sync + 'static> {
 }
 
 impl<K: Eq + Hash + Clone + Send + Sync + 'static> FixedMapping<K> {
+    /// Create a new FixedMapping.
+    ///
+    /// # Arguments
+    /// * `capacity` - The capacity of the `JumpingWindow`s.
+    /// * `period` - The duration of the `JumpingWindow`s.
     pub fn new(capacity: u64, period: Duration) -> Self {
         Self {
             capacity,
@@ -52,8 +60,15 @@ impl<K: Eq + Hash + Clone + Send + Sync + 'static> FixedMapping<K> {
         self.get_bucket(key).reset(None)
     }
 
+    /// Start the background cycler. Failing to do this will result in a memory leak.
+    ///
+    /// # Arguments
+    /// * `mapping` - The FixedMapping, wrapped in an Arc.
+    /// * `cycle_period` - How often to cycle the mapping. If specified, must be greater than the
+    /// mapping's period.
     pub fn start(mapping: Arc<Self>, cycle_period: Option<Duration>) {
         let period = cycle_period.unwrap_or(mapping.period);
+        assert!(period >= mapping.period);
         thread::spawn(move || loop {
             sleep(period);
             mapping.mapping.cycle();
