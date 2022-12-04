@@ -75,6 +75,17 @@ impl JumpingWindow {
     /// 
     /// # Arguments
     /// * `now` - Optionally specify the current time.
+    /// 
+    /// # Examples
+    /// ```
+    /// use floodgate::JumpingWindow;
+    /// use std::time::Duration;
+    /// 
+    /// let mut cooldown = JumpingWindow::new(1, Duration::from_secs(10));
+    /// let next_reset = cooldown.next_reset(None);
+    /// assert!(next_reset > Duration::from_secs(9));
+    /// assert!(next_reset < Duration::from_secs(11));
+    /// ```
     pub fn next_reset(&mut self, now: Option<SystemTime>) -> Duration {
         let now = now.unwrap_or_else(SystemTime::now);
         let since = now.duration_since(self.last_reset).unwrap();
