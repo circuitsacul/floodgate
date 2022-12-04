@@ -12,22 +12,22 @@ pub struct JumpingWindow {
 
 impl JumpingWindow {
     /// Create a new JumpingWindow.
-    /// 
+    ///
     /// # Arguments
     /// * `capacity` - How many triggers can occur per window.
     /// * `period` - How long the window is.
-    /// 
+    ///
     /// # Examples
     /// ```
     /// use floodgate::JumpingWindow;
     /// use std::time::Duration;
-    /// 
+    ///
     /// // create a new JumpingWindow that allows 2 triggers per 10 seconds.
     /// let mut cooldown = JumpingWindow::new(2, Duration::from_secs(10));
-    /// 
+    ///
     /// assert_eq!(cooldown.trigger(None), None);
     /// assert_eq!(cooldown.trigger(None), None);
-    /// 
+    ///
     /// // once the triggers are used up, calling .trigger() will return a "retry after" - that
     /// // is, how long before there will be more triggers available.
     /// assert!(matches!(cooldown.trigger(None), Some(_)));
@@ -42,17 +42,17 @@ impl JumpingWindow {
     }
 
     /// How many triggers (tokens) are left in the current window.
-    /// 
+    ///
     /// # Arguments
     /// * `now` - Optionally specify the current time.
-    /// 
+    ///
     /// # Examples
     /// ```
     /// use floodgate::JumpingWindow;
     /// use std::time::Duration;
-    /// 
+    ///
     /// let mut cooldown = JumpingWindow::new(1, Duration::from_secs(10));
-    /// 
+    ///
     /// assert_eq!(cooldown.tokens(None), 1);
     /// cooldown.trigger(None);
     /// assert_eq!(cooldown.tokens(None), 0);
@@ -72,15 +72,15 @@ impl JumpingWindow {
     }
 
     /// Return the time until the next reset.
-    /// 
+    ///
     /// # Arguments
     /// * `now` - Optionally specify the current time.
-    /// 
+    ///
     /// # Examples
     /// ```
     /// use floodgate::JumpingWindow;
     /// use std::time::Duration;
-    /// 
+    ///
     /// let mut cooldown = JumpingWindow::new(1, Duration::from_secs(10));
     /// let next_reset = cooldown.next_reset(None);
     /// assert!(next_reset > Duration::from_secs(9));
@@ -98,17 +98,17 @@ impl JumpingWindow {
     }
 
     /// Similar to `next_reset`, except that it returns `None` if you still have triggers.
-    /// 
+    ///
     /// # Arguments
     /// * `now` - Optionally specify the current time.
-    /// 
+    ///
     /// # Examples
     /// ```
     /// use floodgate::JumpingWindow;
     /// use std::time::Duration;
-    /// 
+    ///
     /// let mut cooldown = JumpingWindow::new(1, Duration::from_secs(10));
-    /// 
+    ///
     /// assert_eq!(cooldown.retry_after(None), None);
     /// cooldown.trigger(None);
     /// assert!(matches!(cooldown.retry_after(None), Some(_)));
@@ -122,17 +122,17 @@ impl JumpingWindow {
     }
 
     /// Returns whether or not there are still available triggers.
-    /// 
+    ///
     /// # Arguments
     /// * `now` - Optionally specify the current time.
-    /// 
+    ///
     /// # Examples
     /// ```
     /// use floodgate::JumpingWindow;
     /// use std::time::Duration;
-    /// 
+    ///
     /// let mut cooldown = JumpingWindow::new(1, Duration::from_secs(10));
-    /// 
+    ///
     /// assert_eq!(cooldown.can_trigger(None), true);
     /// cooldown.trigger(None);
     /// assert_eq!(cooldown.can_trigger(None), false);
@@ -142,17 +142,17 @@ impl JumpingWindow {
     }
 
     /// Trigger the cooldown.
-    /// 
+    ///
     /// # Arguments
     /// * `now` - Optionally specify the current time.
-    /// 
+    ///
     /// # Examples
     /// ```
     /// use floodgate::JumpingWindow;
     /// use std::time::Duration;
-    /// 
+    ///
     /// let mut cooldown = JumpingWindow::new(1, Duration::from_secs(10));
-    /// 
+    ///
     /// assert_eq!(cooldown.trigger(None), None);
     /// assert!(matches!(cooldown.trigger(None), Some(_)));
     /// ```
@@ -168,18 +168,18 @@ impl JumpingWindow {
     }
 
     /// Reset the cooldown.
-    /// 
+    ///
     /// # Arguments
     /// * `now` - Optionally specify the current time.
-    /// 
+    ///
     /// # Examples
     /// ```
     /// use floodgate::JumpingWindow;
     /// use std::time::Duration;
-    /// 
+    ///
     /// let mut cooldown = JumpingWindow::new(1, Duration::from_secs(10));
     /// cooldown.trigger(None);
-    /// 
+    ///
     /// assert!(!cooldown.can_trigger(None));
     /// cooldown.reset(None);
     /// assert!(cooldown.can_trigger(None));

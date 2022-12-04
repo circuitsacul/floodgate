@@ -9,21 +9,30 @@ use dashmap::mapref::one::RefMut;
 
 use crate::{mapping::Mapping, JumpingWindow};
 
+/// Similar to `floodgate::FixedMapping`, except that each cooldown can have
+/// a different capacity and/or period.
+///
+/// For some method documentation, please see `floodgate::JumpingWindow`.
 pub struct DynamicMapping<K: Eq + Hash + Clone + Send + Sync + 'static> {
     mapping: Mapping<K>,
-    max_period: Duration,
+    cycle_period: Duration,
 }
 
 impl<K: Eq + Hash + Clone + Send + Sync + 'static> DynamicMapping<K> {
-    pub fn new(max_period: Duration) -> Self {
+    /// Create a new DynamicMapping.
+    ///
+    /// # Arguments
+    /// * `cycle_period` - How often to cycle the mapping. Must be greater than
+    /// the period of any cooldown this mapping contains.
+    pub fn new(cycle_period: Duration) -> Self {
         Self {
-            max_period,
+            cycle_period,
             mapping: Mapping::new(),
         }
     }
 
     fn get_bucket(&self, key: &K, capacity: u64, period: Duration) -> RefMut<K, JumpingWindow> {
-        debug_assert!(period <= self.max_period);
+        debug_assert!(period <= self.cycle_period);
         self.mapping.get_bucket(key, capacity, period)
     }
 
@@ -51,10 +60,13 @@ impl<K: Eq + Hash + Clone + Send + Sync + 'static> DynamicMapping<K> {
         self.get_bucket(key, capacity, period).reset(None)
     }
 
-    pub fn start(mapping: Arc<Self>, cycle_period: Option<Duration>) {
-        let period = cycle_period.unwrap_or(mapping.max_period);
+    /// Start the background cycler. Failing to do this will result in a memory leak.
+    ///
+    /// # Arguments
+    /// * `mapping` - The DynamicMapping, wrapped in an Arc.
+    pub fn start(mapping: Arc<Self>) {
         thread::spawn(move || loop {
-            sleep(period);
+            sleep(mapping.cycle_period);
             mapping.mapping.cycle();
         });
     }
