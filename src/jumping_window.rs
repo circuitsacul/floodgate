@@ -1,4 +1,4 @@
-use std::time::{Duration, SystemTime};
+use std::time::{Duration, Instant};
 
 /// A simple ratelimit implementation.
 #[derive(Debug)]
@@ -6,7 +6,7 @@ pub struct JumpingWindow {
     capacity: u64,
     period: Duration,
 
-    last_reset: SystemTime,
+    last_reset: Instant,
     tokens: u64,
 }
 
@@ -36,7 +36,7 @@ impl JumpingWindow {
         Self {
             capacity,
             period,
-            last_reset: SystemTime::now(),
+            last_reset: Instant::now(),
             tokens: capacity,
         }
     }
@@ -57,14 +57,10 @@ impl JumpingWindow {
     /// cooldown.trigger(None);
     /// assert_eq!(cooldown.tokens(None), 0);
     /// ```
-    pub fn tokens(&mut self, now: Option<SystemTime>) -> u64 {
-        let now = now.unwrap_or_else(SystemTime::now);
+    pub fn tokens(&mut self, now: Option<Instant>) -> u64 {
+        let now = now.unwrap_or_else(Instant::now);
 
-        if now
-            .duration_since(self.last_reset)
-            .expect("time went backwards")
-            > self.period
-        {
+        if now.duration_since(self.last_reset) > self.period {
             self.reset(Some(now));
         }
 
@@ -86,9 +82,9 @@ impl JumpingWindow {
     /// assert!(next_reset > Duration::from_secs(9));
     /// assert!(next_reset < Duration::from_secs(11));
     /// ```
-    pub fn next_reset(&mut self, now: Option<SystemTime>) -> Duration {
-        let now = now.unwrap_or_else(SystemTime::now);
-        let since = now.duration_since(self.last_reset).unwrap();
+    pub fn next_reset(&mut self, now: Option<Instant>) -> Duration {
+        let now = now.unwrap_or_else(Instant::now);
+        let since = now.duration_since(self.last_reset);
 
         if since > self.period {
             Duration::from_secs(0)
@@ -113,7 +109,7 @@ impl JumpingWindow {
     /// cooldown.trigger(None);
     /// assert!(matches!(cooldown.retry_after(None), Some(_)));
     /// ```
-    pub fn retry_after(&mut self, now: Option<SystemTime>) -> Option<Duration> {
+    pub fn retry_after(&mut self, now: Option<Instant>) -> Option<Duration> {
         if self.tokens(now) == 0 {
             Some(self.next_reset(now))
         } else {
@@ -137,7 +133,7 @@ impl JumpingWindow {
     /// cooldown.trigger(None);
     /// assert_eq!(cooldown.can_trigger(None), false);
     /// ```
-    pub fn can_trigger(&mut self, now: Option<SystemTime>) -> bool {
+    pub fn can_trigger(&mut self, now: Option<Instant>) -> bool {
         self.tokens(now) != 0
     }
 
@@ -156,7 +152,7 @@ impl JumpingWindow {
     /// assert_eq!(cooldown.trigger(None), None);
     /// assert!(matches!(cooldown.trigger(None), Some(_)));
     /// ```
-    pub fn trigger(&mut self, now: Option<SystemTime>) -> Option<Duration> {
+    pub fn trigger(&mut self, now: Option<Instant>) -> Option<Duration> {
         let tokens = self.tokens(now);
 
         if tokens == 0 {
@@ -184,8 +180,8 @@ impl JumpingWindow {
     /// cooldown.reset(None);
     /// assert!(cooldown.can_trigger(None));
     /// ```
-    pub fn reset(&mut self, now: Option<SystemTime>) {
+    pub fn reset(&mut self, now: Option<Instant>) {
         self.tokens = self.capacity;
-        self.last_reset = now.unwrap_or_else(SystemTime::now);
+        self.last_reset = now.unwrap_or_else(Instant::now);
     }
 }

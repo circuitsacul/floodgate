@@ -12,13 +12,13 @@ mod test {
     use std::{
         sync::Arc,
         thread,
-        time::{Duration, SystemTime},
+        time::{Duration, Instant},
     };
 
     use crate::FixedMapping;
 
     fn benchmark_once(cooldown: Arc<FixedMapping<i32>>, id: i32, triggers: i32) {
-        let start = SystemTime::now();
+        let start = Instant::now();
         for i in (triggers * id)..(triggers * (id + 1)) {
             cooldown.trigger(&i);
         }
