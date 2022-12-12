@@ -41,7 +41,11 @@ impl<K: Eq + Hash + Clone + Send + Sync> Mapping<K> {
             false => (&self.left, &self.right),
         };
 
-        if let Some(bucket) = current.get_mut(key) {
+        if let Some(mut bucket) = current.get_mut(key) {
+            if bucket.capacity != capacity || bucket.period != period {
+                bucket.capacity = capacity;
+                bucket.period = period;
+            }
             return bucket;
         }
 

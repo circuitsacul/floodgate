@@ -3,8 +3,8 @@ use std::time::{Duration, Instant};
 /// A simple ratelimit implementation.
 #[derive(Debug)]
 pub struct JumpingWindow {
-    capacity: u64,
-    period: Duration,
+    pub(crate) capacity: u64,
+    pub(crate) period: Duration,
 
     last_reset: Instant,
     tokens: u64,
